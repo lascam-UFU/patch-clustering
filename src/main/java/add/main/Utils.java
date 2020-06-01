@@ -8,7 +8,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -35,7 +35,7 @@ public class Utils {
             InputStream is = new FileInputStream(filename);
             int BUFFER_SIZE = 8192;
 
-            BufferedReader in = new BufferedReader(new InputStreamReader(is, Charset.forName("ISO-8859-1")), BUFFER_SIZE);
+            BufferedReader in = new BufferedReader(new InputStreamReader(is, StandardCharsets.ISO_8859_1), BUFFER_SIZE);
             while ((line = in.readLine()) != null) {
                 lines.add(line);
             }

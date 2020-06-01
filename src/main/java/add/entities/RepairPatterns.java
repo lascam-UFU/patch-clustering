@@ -1,9 +1,27 @@
 package add.entities;
 
+import utils.MapList;
+import gumtree.spoon.diff.operations.Operation;
+
 /**
  * Created by tdurieux
  */
 public class RepairPatterns extends Feature {
+
+    MapList<String, Operation> operationsPerFeature = new MapList<>();
+
+    MapList<String, PatternInstance> patternInstances = new MapList<>();
+
+    public void incrementFeatureCounter(String key, Operation operations) {
+        super.incrementFeatureCounter(key);
+        operationsPerFeature.add(key, operations);
+    }
+
+    public void incrementFeatureCounterInstance(String key, PatternInstance operations) {
+        super.incrementFeatureCounter(key);
+        patternInstances.add(key, operations);
+    }
+
     @FeatureAnnotation(key = "condBlockOthersAdd", name = "Conditional block addition")
     private int condBlockOthersAdd = 0;
 
@@ -81,4 +99,14 @@ public class RepairPatterns extends Feature {
 
     @FeatureAnnotation(key = "notClassified", name = "undefined")
     private int notClassified = 0;
+
+    @FeatureAnnotation(key = "binOperatorMod", name = "Modify binary operator")
+    private int binOperatorMod = 0;
+
+    @FeatureAnnotation(key = "addAssignment", name = "Add assignment")
+    private int addAssignment = 0;
+
+    public MapList<String, PatternInstance> getPatternInstances() {
+        return patternInstances;
+    }
 }

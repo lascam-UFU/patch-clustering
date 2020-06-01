@@ -42,7 +42,6 @@ public class CtElementAnalyzer {
         UPDATE("Change"),
         DELETE("Rem");
 
-
         private String name;
 
         ACTION_TYPE(String name) {
@@ -74,7 +73,7 @@ public class CtElementAnalyzer {
                 public <T> void visitCtBinaryOperator(CtBinaryOperator<T> e) {
                     CtIf ctIf = e.getParent(CtIf.class);
                     if (ctIf != null && (e.equals(ctIf.getCondition()) || e.hasParent(ctIf.getCondition()))) {
-                        output.incrementFeatureCounter("condExpMod");
+                        output.incrementFeatureCounter("condExpMod", e);
                     }
                     super.visitCtBinaryOperator(e);
                 }
@@ -82,11 +81,11 @@ public class CtElementAnalyzer {
                 @Override
                 public <T> void visitCtMethod(CtMethod<T> e) {
                     if (!e.getSimpleName().equals(((CtNamedElement) dstElement).getSimpleName())) {
-                        output.incrementFeatureCounter("mdRen");
+                        output.incrementFeatureCounter("mdRen", e);
                     }
                     if (e.getModifiers().size() != ((CtModifiable) dstElement).getModifiers().size() ||
                             !e.getModifiers().containsAll(((CtModifiable) dstElement).getModifiers())) {
-                        output.incrementFeatureCounter("mdModChange");
+                        output.incrementFeatureCounter("mdModChange", e);
                     }
                     super.visitCtMethod(e);
                 }
@@ -95,9 +94,9 @@ public class CtElementAnalyzer {
                 public <T> void scanCtAbstractInvocation(CtAbstractInvocation<T> e) {
                     if (dstElement instanceof CtAbstractInvocation) {
                         if (e.getArguments().size() > ((CtAbstractInvocation) dstElement).getArguments().size()) {
-                            output.incrementFeatureCounter("mcParRem");
+                            output.incrementFeatureCounter("mcParRem", e);
                         } else if (e.getArguments().size() < ((CtAbstractInvocation) dstElement).getArguments().size()) {
-                            output.incrementFeatureCounter("mcParAdd");
+                            output.incrementFeatureCounter("mcParAdd", e);
                         }
                     }
                     super.scanCtAbstractInvocation(e);
@@ -106,7 +105,7 @@ public class CtElementAnalyzer {
                 @Override
                 public <T> void visitCtConditional(CtConditional<T> e) {
                     if (!(dstElement instanceof CtConditional)) {
-                        output.incrementFeatureCounter("condBranRem");
+                        output.incrementFeatureCounter("condBranRem", e);
                     }
                     super.visitCtConditional(e);
                 }
@@ -115,7 +114,7 @@ public class CtElementAnalyzer {
                 public <T> void scanCtVariable(CtVariable<T> e) {
                     if (e.getModifiers().size() != ((CtModifiable) dstElement).getModifiers().size() ||
                             !e.getModifiers().containsAll(((CtModifiable) dstElement).getModifiers())) {
-                        output.incrementFeatureCounter("varModChange");
+                        output.incrementFeatureCounter("varModChange", e);
                     }
                     super.scanCtVariable(e);
                 }
@@ -130,38 +129,37 @@ public class CtElementAnalyzer {
 
                 @Override
                 public <T> void visitCtConstructorCall(CtConstructorCall<T> e) {
-                    output.incrementFeatureCounter("objInstMod");
+                    output.incrementFeatureCounter("objInstMod", e);
                     super.visitCtConstructorCall(e);
                 }
 
                 @Override
                 public <T> void scanCtExpression(CtExpression<T> expression) {
                     if (!(expression instanceof CtConditional) && dstElement instanceof CtConditional) {
-                        output.incrementFeatureCounter("condBranIfElseAdd");
+                        output.incrementFeatureCounter("condBranIfElseAdd", expression);
                     }
                     if (expression.getRoleInParent() == CtRole.ARGUMENT && expression.getParent().getMetadata("new") == null) {
-                        output.incrementFeatureCounter("mcParVal" + actionType.name);
+                        output.incrementFeatureCounter("mcParVal" + actionType.name, expression);
                     }
                     CtAssignment assignment = expression.getParent(CtAssignment.class);
                     if (assignment != null && assignment.getMetadata("isMoved") != null && expression.hasParent(assignment.getAssignment())) {
-                        output.incrementFeatureCounter("assignExp" + actionType.name);
+                        output.incrementFeatureCounter("assignExp" + actionType.name, expression);
                     }
                     CtLocalVariable localVariable = expression.getParent(CtLocalVariable.class);
                     if (localVariable != null && localVariable.getMetadata("new") == null && localVariable.getMetadata("delete") == null) {
-                        output.incrementFeatureCounter("assignExp" + actionType.name);
+                        output.incrementFeatureCounter("assignExp" + actionType.name, expression);
                     }
-
                     CtReturn ctReturn = expression.getParent(CtReturn.class);
                     if (ctReturn != null && ctReturn.getMetadata("new") == null && ctReturn.getMetadata("delete") == null) {
-                        output.incrementFeatureCounter("retExpChange");
+                        output.incrementFeatureCounter("retExpChange", ctReturn);
                     }
 
                     CtFor ctFor = expression.getParent(CtFor.class);
                     if (ctFor != null && ctFor.getMetadata("new") == null) {
                         if (ctFor.getForInit() != null && !ctFor.getForInit().isEmpty() && expression.hasParent(ctFor.getForInit().get(0))) {
-                            output.incrementFeatureCounter("loopInitChange");
+                            output.incrementFeatureCounter("loopInitChange", expression);
                         } else if (expression.hasParent(ctFor.getExpression())) {
-                            output.incrementFeatureCounter("loopCondChange");
+                            output.incrementFeatureCounter("loopCondChange", expression);
                         }
                     }
                     super.scanCtExpression(expression);
@@ -170,7 +168,7 @@ public class CtElementAnalyzer {
                 @Override
                 public <T> void visitCtParameter(CtParameter<T> e) {
                     if (e.getParent().getMetadata("new") == null) {
-                        output.incrementFeatureCounter("mdParRem");
+                        output.incrementFeatureCounter("mdParRem", e);
                     }
                     super.visitCtParameter(e);
                 }
@@ -180,35 +178,35 @@ public class CtElementAnalyzer {
                     if ((e.getRoleInParent() == CtRole.TYPE || e.getRoleInParent() == CtRole.MULTI_TYPE)
                             && e.getMetadata("update") != null) {
                         if (e.getParent() instanceof CtMethod) {
-                            output.incrementFeatureCounter("mdRetTyChange");
+                            output.incrementFeatureCounter("mdRetTyChange", e);
                         }
                         if (e.getParent() instanceof CtVariable) {
-                            output.incrementFeatureCounter("varTyChange");
+                            output.incrementFeatureCounter("varTyChange", e);
                             if (e.getParent() instanceof CtParameter) {
-                                output.incrementFeatureCounter("mdParTyChange");
+                                output.incrementFeatureCounter("mdParTyChange", e);
                             }
                         }
                     } else if (e.getRoleInParent() == CtRole.INTERFACE) {
-                        output.incrementFeatureCounter("tyImpInterf");
+                        output.incrementFeatureCounter("tyImpInterf", e);
                     }
                     super.visitCtTypeReference(e);
                 }
 
                 @Override
                 public <T> void visitCtInvocation(CtInvocation<T> e) {
-                    output.incrementFeatureCounter("mcRepl");
+                    output.incrementFeatureCounter("mcRepl", e);
                     super.visitCtInvocation(e);
                 }
 
                 @Override
                 public <T> void visitCtFieldRead(CtFieldRead<T> e) {
-                    output.incrementFeatureCounter("varReplVar");
+                    output.incrementFeatureCounter("varReplVar", e);
                     super.visitCtFieldRead(e);
                 }
 
                 @Override
                 public <T> void visitCtVariableRead(CtVariableRead<T> e) {
-                    output.incrementFeatureCounter("varReplVar");
+                    output.incrementFeatureCounter("varReplVar", e);
                     super.visitCtVariableRead(e);
                 }
             });
@@ -227,19 +225,19 @@ public class CtElementAnalyzer {
                 e.accept(new CtInheritanceScanner() {
                     @Override
                     public <T, A extends T> void visitCtAssignment(CtAssignment<T, A> e) {
-                        output.incrementFeatureCounter("assign" + actionType.name);
+                        output.incrementFeatureCounter("assign" + actionType.name, e);
                         super.visitCtAssignment(e);
                     }
 
                     @Override
                     public void visitCtIf(CtIf e) {
                         if (actionType == ACTION_TYPE.DELETE) {
-                            output.incrementFeatureCounter("condBran" + actionType.name);
+                            output.incrementFeatureCounter("condBran" + actionType.name, e);
                         } else if (e.getElseStatement() != null
                                 && e.getElseStatement().getMetadata("isMoved") == null) {
-                            output.incrementFeatureCounter("condBranIfElse" + actionType.name);
+                            output.incrementFeatureCounter("condBranIfElse" + actionType.name, e);
                         } else {
-                            output.incrementFeatureCounter("condBranIf" + actionType.name);
+                            output.incrementFeatureCounter("condBranIf" + actionType.name, e);
                         }
                         super.visitCtIf(e);
                     }
@@ -248,12 +246,12 @@ public class CtElementAnalyzer {
                     public <R> void visitCtBlock(CtBlock<R> e) {
                         if (e.getRoleInParent() == CtRole.ELSE) {
                             if (actionType == ACTION_TYPE.DELETE) {
-                                output.incrementFeatureCounter("condBran" + actionType.name);
+                                output.incrementFeatureCounter("condBran" + actionType.name, e);
                             } else {
                                 if (e.getParent().getMetadata("new") == null) {
-                                    output.incrementFeatureCounter("condBranElseAdd");
+                                    output.incrementFeatureCounter("condBranElseAdd", e);
                                 } else {
-                                    output.incrementFeatureCounter("condBranIfElse" + actionType.name);
+                                    output.incrementFeatureCounter("condBranIfElse" + actionType.name, e);
                                 }
                             }
                         }
@@ -263,9 +261,9 @@ public class CtElementAnalyzer {
                     @Override
                     public <T> void visitCtConditional(CtConditional<T> e) {
                         if (actionType == ACTION_TYPE.DELETE) {
-                            output.incrementFeatureCounter("condBran" + actionType.name);
+                            output.incrementFeatureCounter("condBran" + actionType.name, e);
                         } else {
-                            output.incrementFeatureCounter("condBranIfElse" + actionType.name);
+                            output.incrementFeatureCounter("condBranIfElse" + actionType.name, e);
                         }
                         super.visitCtConditional(e);
                     }
@@ -273,9 +271,9 @@ public class CtElementAnalyzer {
                     @Override
                     public <E> void visitCtCase(CtCase<E> e) {
                         if (actionType == ACTION_TYPE.DELETE) {
-                            output.incrementFeatureCounter("condBranRem");
+                            output.incrementFeatureCounter("condBranRem", e);
                         } else if (actionType == ACTION_TYPE.ADD) {
-                            output.incrementFeatureCounter("condBranCaseAdd");
+                            output.incrementFeatureCounter("condBranCaseAdd", e);
                         }
                         super.visitCtCase(e);
                     }
@@ -285,13 +283,13 @@ public class CtElementAnalyzer {
                         if (actionType == ACTION_TYPE.DELETE) {
                             CtIf ctIf = expression.getParent(CtIf.class);
                             if (ctIf != null && ctIf.getMetadata("new") == null && expression.hasParent(ctIf.getCondition())) {
-                                output.incrementFeatureCounter("condExpRed");
+                                output.incrementFeatureCounter("condExpRed", e);
                             }
                         } else if (actionType == ACTION_TYPE.ADD) {
                             CtIf ctIf = expression.getParent(CtIf.class);
                             if (ctIf != null && ctIf.getMetadata("new") == null) {
                                 if (expression.hasParent(ctIf.getCondition())) {
-                                    output.incrementFeatureCounter("condExpExpand");
+                                    output.incrementFeatureCounter("condExpExpand", e);
                                 }
                             }
                         }
@@ -300,7 +298,7 @@ public class CtElementAnalyzer {
 
                     @Override
                     public void scanCtLoop(CtLoop loop) {
-                        output.incrementFeatureCounter("loop" + actionType.name);
+                        output.incrementFeatureCounter("loop" + actionType.name, e);
                         super.scanCtLoop(loop);
                     }
 
@@ -308,39 +306,39 @@ public class CtElementAnalyzer {
                     public <T> void visitCtLiteral(CtLiteral<T> e) {
                         CtVariable parent = e.getParent(CtVariable.class);
                         if (parent != null && parent.getMetadata("new") == null) {
-                            output.incrementFeatureCounter("objInstMod");
+                            output.incrementFeatureCounter("objInstMod", e);
                         }
                         super.visitCtLiteral(e);
                     }
 
                     @Override
                     public <T> void visitCtInvocation(CtInvocation<T> e) {
-                        output.incrementFeatureCounter("mc" + actionType.name);
+                        output.incrementFeatureCounter("mc" + actionType.name, e);
                         super.visitCtInvocation(e);
                     }
 
                     @Override
                     public <R> void visitCtReturn(CtReturn<R> e) {
                         if (actionType == ACTION_TYPE.ADD) {
-                            output.incrementFeatureCounter("retBranch" + actionType.name);
+                            output.incrementFeatureCounter("retBranch" + actionType.name, e);
                         } else if (actionType == ACTION_TYPE.DELETE) {
-                            output.incrementFeatureCounter("ret" + actionType.name);
+                            output.incrementFeatureCounter("ret" + actionType.name, e);
                         }
                         super.visitCtReturn(e);
                     }
 
                     @Override
                     public void visitCtThrow(CtThrow e) {
-                        output.incrementFeatureCounter("exThrows" + actionType.name);
+                        output.incrementFeatureCounter("exThrows" + actionType.name, e);
                         super.visitCtThrow(e);
                     }
 
                     @Override
                     public <T> void visitCtMethod(CtMethod<T> e) {
                         if (e.hasAnnotation(Override.class)) {
-                            output.incrementFeatureCounter("mdOverride");
+                            output.incrementFeatureCounter("mdOverride", e);
                         } else {
-                            output.incrementFeatureCounter("md" + actionType.name);
+                            output.incrementFeatureCounter("md" + actionType.name, e);
                         }
 
                         super.visitCtMethod(e);
@@ -349,35 +347,34 @@ public class CtElementAnalyzer {
                     @Override
                     public <T> void visitCtParameter(CtParameter<T> e) {
                         if (e.getParent().getMetadata("new") == null) {
-                            output.incrementFeatureCounter("mdPar" + actionType.name);
+                            output.incrementFeatureCounter("mdPar" + actionType.name, e);
                         }
                         super.visitCtParameter(e);
                     }
 
                     @Override
                     public <T> void visitCtTypeReference(CtTypeReference<T> e) {
-                        if ((e.getRoleInParent() == CtRole.TYPE || e.getRoleInParent() == CtRole.MULTI_TYPE)
-                                && e.getMetadata("update") != null) {
+                        if ((e.getRoleInParent() == CtRole.TYPE || e.getRoleInParent() == CtRole.MULTI_TYPE) && e.getMetadata("new") == null) {
                             if (e.getParent() instanceof CtVariable) {
-                                output.incrementFeatureCounter("varTyChange");
+                                output.incrementFeatureCounter("varTyChange", e);
                             }
                         } else if (e.getRoleInParent() == CtRole.INTERFACE) {
-                            output.incrementFeatureCounter("tyImpInterf");
+                            output.incrementFeatureCounter("tyImpInterf", e);
                         }
                         super.visitCtTypeReference(e);
                     }
 
                     @Override
                     public void visitCtTry(CtTry e) {
-                        output.incrementFeatureCounter("exTryCatch" + actionType.name);
+                        output.incrementFeatureCounter("exTryCatch" + actionType.name, e);
                         super.visitCtTry(e);
                     }
 
                     @Override
                     public <T> void visitCtLocalVariable(CtLocalVariable<T> e) {
-                        output.incrementFeatureCounter("var" + actionType.name);
+                        output.incrementFeatureCounter("var" + actionType.name, e);
                         if (e.getDefaultExpression() != null) {
-                            output.incrementFeatureCounter("assign" + actionType.name);
+                            output.incrementFeatureCounter("assign" + actionType.name, e);
                         }
                         super.visitCtLocalVariable(e);
                     }
@@ -385,29 +382,29 @@ public class CtElementAnalyzer {
                     @Override
                     public <T> void scanCtType(CtType<T> type) {
                         if (actionType == ACTION_TYPE.ADD) {
-                            output.incrementFeatureCounter("tyAdd");
+                            output.incrementFeatureCounter("tyAdd", e);
                         }
                         super.scanCtType(type);
                     }
 
                     @Override
                     public <T> void visitCtConstructorCall(CtConstructorCall<T> e) {
-                        output.incrementFeatureCounter("objInst" + actionType.name);
+                        output.incrementFeatureCounter("objInst" + actionType.name, e);
                         super.visitCtConstructorCall(e);
                     }
 
                     @Override
                     public <T> void scanCtExpression(CtExpression<T> expression) {
                         if (expression.getRoleInParent() == CtRole.ARGUMENT && expression.getParent().getMetadata("new") == null) {
-                            output.incrementFeatureCounter("mcPar" + actionType.name);
+                            output.incrementFeatureCounter("mcPar" + actionType.name, e);
                         }
                         CtInvocation ctInvocation = expression.getParent(CtInvocation.class);
                         if (ctInvocation != null && ctInvocation.getMetadata("new") == null) {
-                            output.incrementFeatureCounter("mcParValChange");
+                            output.incrementFeatureCounter("mcParValChange", e);
                         }
                         CtConstructorCall ctConstructorCall = expression.getParent(CtConstructorCall.class);
                         if (ctConstructorCall != null && ctConstructorCall.getMetadata("new") == null) {
-                            output.incrementFeatureCounter("mcParValChange");
+                            output.incrementFeatureCounter("mcParValChange", e);
                         }
                         super.scanCtExpression(expression);
                     }

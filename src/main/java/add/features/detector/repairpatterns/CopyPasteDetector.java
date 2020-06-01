@@ -76,7 +76,7 @@ public class CopyPasteDetector extends AbstractPatternDetector {
             srcNode.setParent(parent);
             String result = print.getResult().trim().replaceAll("\"VAR\"", "VAR");
             if (operationString.contains(result) && !result.isEmpty() && !"VAR".equals(result)) {
-                repairPatterns.incrementFeatureCounter("copyPaste");
+                repairPatterns.incrementFeatureCounter("copyPaste", operation);
             }
             operationString.add(result);
         }

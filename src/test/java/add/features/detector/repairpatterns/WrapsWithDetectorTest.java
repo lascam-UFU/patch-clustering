@@ -134,6 +134,18 @@ public class WrapsWithDetectorTest {
         RepairPatterns repairPatterns = detector.analyze();
 
         Assert.assertTrue(repairPatterns.getFeatureCounter("unwrapTryCatch") == 0);
+        Assert.assertTrue(repairPatterns.getFeatureCounter("wrapsTryCatch") > 0);
+    }
+
+    @Test
+    public void lang37() {
+        Config config = TestUtils.setupConfig("lang_37");
+
+        RepairPatternDetector detector = new RepairPatternDetector(config);
+        RepairPatterns repairPatterns = detector.analyze();
+
+        Assert.assertTrue(repairPatterns.getFeatureCounter("unwrapTryCatch") == 0);
+        Assert.assertTrue(repairPatterns.getFeatureCounter("wrapsTryCatch") > 0);
     }
 
     @Test
@@ -154,6 +166,17 @@ public class WrapsWithDetectorTest {
         RepairPatterns repairPatterns = detector.analyze();
 
         Assert.assertTrue(repairPatterns.getFeatureCounter("wrapsMethod") > 0);
+    }
+
+    @Test
+    public void math103() {
+        Config config = TestUtils.setupConfig("math_103");
+
+        RepairPatternDetector detector = new RepairPatternDetector(config);
+        RepairPatterns repairPatterns = detector.analyze();
+
+        Assert.assertTrue(repairPatterns.getFeatureCounter("unwrapTryCatch") == 0);
+        Assert.assertTrue(repairPatterns.getFeatureCounter("wrapsTryCatch") > 0);
     }
 
     @Test

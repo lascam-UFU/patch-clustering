@@ -11,7 +11,6 @@ import spoon.Launcher;
 import spoon.compiler.Environment;
 import spoon.reflect.declaration.CtElement;
 import spoon.reflect.visitor.DefaultJavaPrettyPrinter;
-import spoon.support.compiler.VirtualFile;
 
 import java.io.File;
 import java.util.List;
@@ -29,13 +28,10 @@ public class SpoonHelper {
         spoon.getEnvironment().setAutoImports(false);
         spoon.getEnvironment().setCommentEnabled(false);
         for (String path : files.keySet()) {
-            String fileContent = String.join(Constants.LINE_BREAK, files.get(path))
-                    .replace("import javax.annotation.Nullable", "// import javax.annotation.Nullable")
-                    .replace("import javax.annotation.CheckForNull", "// import javax.annotation.CheckForNull");
-            VirtualFile virtualFile = new VirtualFile(fileContent, new File(path).getAbsolutePath());
-            spoon.getModelBuilder().addInputSource(virtualFile);
+            spoon.getModelBuilder().addInputSource(new File(path));
         }
         spoon.buildModel();
+
         return spoon;
     }
 

@@ -52,7 +52,7 @@ public class ConditionalBlockDetector extends AbstractPatternDetector {
                             if (wasPatternFound) {
                                 String pattern = this.getVariant(thenBlock, operation);
                                 if (!pattern.isEmpty()) {
-                                    repairPatterns.incrementFeatureCounter(pattern);
+                                    repairPatterns.incrementFeatureCounter(pattern, operation);
                                 }
                             }
                         }
@@ -70,7 +70,7 @@ public class ConditionalBlockDetector extends AbstractPatternDetector {
                                     if (!RepairPatternUtils.isThereOldStatementInStatementList(elseBlock.getStatements())) {
                                         String pattern = this.getVariant(ctBlock, operation);
                                         if (!pattern.isEmpty()) {
-                                            repairPatterns.incrementFeatureCounter(pattern);
+                                            repairPatterns.incrementFeatureCounter(pattern, operation);
                                         }
                                     }
                                 }
@@ -87,9 +87,9 @@ public class ConditionalBlockDetector extends AbstractPatternDetector {
                         if (thenExpression.getMetadata("new") != null &&
                                 elseExpression.getMetadata("new") != null) {
                             if (operation instanceof InsertOperation) {
-                                repairPatterns.incrementFeatureCounter("condBlockOthersAdd");
+                                repairPatterns.incrementFeatureCounter("condBlockOthersAdd", operation);
                             } else {
-                                repairPatterns.incrementFeatureCounter("condBlockRem");
+                                repairPatterns.incrementFeatureCounter("condBlockRem", operation);
                             }
                         }
                     }
@@ -102,7 +102,7 @@ public class ConditionalBlockDetector extends AbstractPatternDetector {
                         if (statements.size() > 0 && !RepairPatternUtils.isThereOldStatementInStatementList(statements)) {
                             String pattern = this.getVariant(ctCase, operation);
                             if (!pattern.isEmpty()) {
-                                repairPatterns.incrementFeatureCounter(pattern);
+                                repairPatterns.incrementFeatureCounter(pattern, operation);
                             }
                         }
                     }
@@ -117,7 +117,7 @@ public class ConditionalBlockDetector extends AbstractPatternDetector {
                             CtExpression elseExpression = ctConditional.getElseExpression();
                             if (thenExpression.getMetadata("new") != null &&
                                     elseExpression.getMetadata("new") != null) {
-                                repairPatterns.incrementFeatureCounter("condBlockRem");
+                                repairPatterns.incrementFeatureCounter("condBlockRem", operation);
                             }
                         }
                     }
@@ -129,7 +129,7 @@ public class ConditionalBlockDetector extends AbstractPatternDetector {
                             CtExpression elseExpression = ctConditional.getElseExpression();
                             if (thenExpression.getMetadata("new") != null &&
                                     elseExpression.getMetadata("new") != null) {
-                                repairPatterns.incrementFeatureCounter("condBlockOthersAdd");
+                                repairPatterns.incrementFeatureCounter("condBlockOthersAdd", operation);
                             }
                         }
                     }

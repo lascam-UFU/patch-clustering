@@ -8,6 +8,7 @@ import spoon.reflect.code.CtBlock;
 import spoon.reflect.code.CtIf;
 import spoon.reflect.code.CtStatement;
 import spoon.reflect.declaration.CtElement;
+import spoon.reflect.declaration.CtMethod;
 
 import java.util.List;
 
@@ -15,6 +16,8 @@ import java.util.List;
  * Created by tdurieux
  */
 public class CodeMovingDetector extends AbstractPatternDetector {
+
+    private static final String CODE_MOVE = "codeMove";
 
     public CodeMovingDetector(List<Operation> operations) {
         super(operations);
@@ -55,11 +58,33 @@ public class CodeMovingDetector extends AbstractPatternDetector {
                 continue;
             }
 
+            CtMethod methoddestination = dstNode.getParent(CtMethod.class);
+            CtMethod methodinsrc = srcNode.getParent(CtMethod.class);
+            if (methoddestination != null && methodinsrc != null && !methodinsrc.getSignature().equals(methoddestination.getSignature())) {
+                continue;
+            }
+
             if (!RepairPatternUtils.isThereChangesInChildren(srcNode)) {
                 if (dstParent.getMetadata("new") == null &&
                         srcParent.getMetadata("new") == null
                         && dstNode.getPosition().getSourceStart() != srcNode.getPosition().getSourceStart()) {
-                    repairPatterns.incrementFeatureCounter("codeMove");
+                    repairPatterns.incrementFeatureCounter(CODE_MOVE, operation);
+
+                    // Move maction = (Move) operation.getAction();
+                    // List<CtElement> suspicious = MappingAnalysis.getFollowStatements(diff, maction);
+                    // MappingAnalysis.getAllStatementsOfParent(maction);
+                    // suspicious.remove(srcNode);
+//                    if (suspicious.size() > 0) {
+//                        CtElement lineP = MappingAnalysis.getParentLine(new LineFilter(), suspicious.get(0));
+//                        ITree lineTree = MappingAnalysis.getCorrespondingInSourceTree(diff,
+//                                operation.getAction().getNode(), lineP);
+//
+//                        repairPatterns.incrementFeatureCounterInstance(CODE_MOVE,
+//                                new PatternInstance(CODE_MOVE, operation, dstNode, suspicious, lineP, lineTree));
+//                    } else {
+//                        repairPatterns.incrementFeatureCounterInstance(CODE_MOVE, new PatternInstance(CODE_MOVE,
+//                                operation, dstNode, suspicious, srcNode, maction.getParent()));
+//                    }
                 }
             }
         }

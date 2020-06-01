@@ -2,9 +2,11 @@ package add.features.detector.spoon;
 
 import add.features.detector.spoon.filter.ReturnInsideConditionalFilter;
 import add.features.detector.spoon.filter.ThrowInsideConditionalFilter;
+import com.github.gumtreediff.tree.ITree;
+import gumtree.spoon.builder.SpoonGumTreeBuilder;
+import gumtree.spoon.diff.Diff;
 import gumtree.spoon.diff.operations.MoveOperation;
 import gumtree.spoon.diff.operations.Operation;
-import spoon.SpoonException;
 import spoon.reflect.code.CtArrayAccess;
 import spoon.reflect.code.CtBinaryOperator;
 import spoon.reflect.code.CtBlock;
@@ -21,11 +23,13 @@ import spoon.reflect.code.CtTypeAccess;
 import spoon.reflect.code.CtUnaryOperator;
 import spoon.reflect.code.CtVariableAccess;
 import spoon.reflect.code.CtWhile;
+import spoon.reflect.declaration.CtClass;
 import spoon.reflect.cu.position.NoSourcePosition;
 import spoon.reflect.declaration.CtElement;
 import spoon.reflect.declaration.CtVariable;
 import spoon.reflect.declaration.ModifierKind;
 import spoon.reflect.reference.CtTypeReference;
+import spoon.reflect.visitor.filter.LineFilter;
 import spoon.reflect.visitor.filter.TypeFilter;
 
 import java.util.ArrayList;
@@ -182,13 +186,6 @@ public class RepairPatternUtils {
         return false;
     }
 
-    public static boolean isMovingDstStatement(CtStatement statement) {
-        if (isMovedStatement(statement) && statement.getMetadata("movingDst") != null) {
-            return true;
-        }
-        return false;
-    }
-
     public static boolean isNewIf(CtIf ctIf) {
         if (ctIf.getMetadata("new") != null) {
             List<CtBinaryOperator> binaryOperatorList = ctIf.getCondition().getElements(new TypeFilter<>(CtBinaryOperator.class));
@@ -286,6 +283,61 @@ public class RepairPatternUtils {
         return false;
     }
 
+    public static List<CtStatement> getIsThereOldStatementInStatementList(Diff diff, List<CtStatement> statements) {
+        List<CtStatement> statementsNotNew = new ArrayList<>();
+        for (CtStatement statement : statements) {
+            if (!RepairPatternUtils.isNewStatement(statement)) {
+
+                ITree leftMoved = MappingAnalysis.getLeftFromRightNodeMapped(diff, statement);
+                if (leftMoved != null) {
+                    CtElement susp = (CtElement) leftMoved.getMetadata(SpoonGumTreeBuilder.SPOON_OBJECT);
+                    if (susp instanceof CtStatement) {
+                        statementsNotNew.add((CtStatement) susp);
+                    }
+                }
+            }
+        }
+        return statementsNotNew;
+    }
+
+    public static CtElement getElementInOld(Diff diff, CtElement elementInNew) {
+        ITree leftTree = MappingAnalysis.getLeftFromRightNodeMapped(diff, elementInNew);
+        CtElement oldElement = null;
+        if (leftTree != null) {
+            oldElement = (CtElement) leftTree.getMetadata(SpoonGumTreeBuilder.SPOON_OBJECT);
+        }
+
+        return oldElement;
+    }
+
+    public static boolean getIsInvocationInStatemnt(Diff diff, CtElement oldLine, CtElement newInvocationOrConstructor) {
+        CtElement newline = MappingAnalysis.getParentLine(new LineFilter(), newInvocationOrConstructor);
+        ITree treeOldLine = MappingAnalysis.getRightFromLeftNodeMapped(diff, oldLine);
+
+        if (treeOldLine == null) {
+            return false;
+        }
+        CtElement newOldLine = (CtElement) treeOldLine.getMetadata(SpoonGumTreeBuilder.SPOON_OBJECT);
+
+        return newline == newOldLine;
+    }
+
+    public static boolean getIsMovedExpressionInStatement(Diff diff, CtStatement oldStat, CtExpression oldExpression) {
+
+        ITree rightTreeStat = MappingAnalysis.getRightFromLeftNodeMapped(diff, oldStat);
+        ITree rightTreeExper = MappingAnalysis.getRightFromLeftNodeMapped(diff, oldExpression);
+
+        if (rightTreeStat == null || rightTreeExper == null)
+            return true;
+
+        CtElement newStatement = (CtElement) rightTreeStat.getMetadata(SpoonGumTreeBuilder.SPOON_OBJECT);
+        CtElement newExper = (CtElement) rightTreeExper.getMetadata(SpoonGumTreeBuilder.SPOON_OBJECT);
+
+        CtStatement statementParent = newExper.getParent(new TypeFilter<>(CtStatement.class));
+
+        return newStatement == statementParent;
+    }
+
     public static boolean isThereOnlyNewAndMovedStatementsInStatementList(List<CtStatement> statements) {
         for (CtStatement statement : statements) {
             if (!isNewStatement(statement)) {
@@ -349,19 +401,16 @@ public class RepairPatternUtils {
     }
 
     public static boolean areAllOperationsAtTheSamePosition(List<Operation> operations) {
-        boolean allSamePosition = true;
         if (operations.isEmpty()) {
             return false;
         }
         if (operations.get(0).getSrcNode().getPosition() instanceof NoSourcePosition) {
             return false;
         }
+        boolean allSamePosition = true;
         int position = operations.get(0).getSrcNode().getPosition().getLine();
         for (int i = 1; i < operations.size(); i++) {
-            if (operations.get(i).getSrcNode().getPosition() instanceof NoSourcePosition) {
-                return false;
-            }
-            if (operations.get(i).getSrcNode().getPosition().getLine() != position) {
+            if (operations.get(i).getSrcNode().getPosition() instanceof NoSourcePosition || operations.get(i).getSrcNode().getPosition().getLine() != position) {
                 allSamePosition = false;
                 break;
             }
@@ -399,34 +448,40 @@ public class RepairPatternUtils {
         return isThereChanges;
     }
 
-    public static boolean isConstantVariableAccess(CtVariableAccess ctVariableAccess) {
-        try {
-            Set<ModifierKind> modifiers = ctVariableAccess.getVariable().getModifiers();
-            if (modifiers.contains(ModifierKind.FINAL)) {
-                return true;
-            } else {
-                String simpleName = ctVariableAccess.getVariable().getSimpleName();
-                if (simpleName.toUpperCase().equals(simpleName)) {
-                    return true;
-                }
-            }
-        } catch (SpoonException e) {
-            return false;
-        }
-        return false;
-    }
-
     public static boolean isConstantTypeAccess(CtTypeAccess ctTypeAccess) {
         Set<ModifierKind> modifiers = ctTypeAccess.getType().getModifiers();
         if (modifiers.contains(ModifierKind.FINAL)) {
             return true;
         } else {
-            String simpleName = ctTypeAccess.getAccessedType().getSimpleName();
-            if (simpleName.toUpperCase().equals(simpleName)) {
-                return true;
+            String fullName = ctTypeAccess.getAccessedType().getQualifiedName();
+            String[] splitname = fullName.split("\\.");
+            if (splitname.length > 1) {
+                String simplename = splitname[splitname.length - 1];
+                return simplename.toUpperCase().equals(simplename);
             }
         }
         return false;
     }
 
+    public static boolean isThisAccess(CtTypeAccess ctTypeAccess) {
+        // Ignore CtThisAccess
+        CtClass classname = ctTypeAccess.getParent(CtClass.class);
+        if (classname.getSimpleName().equals(ctTypeAccess.getAccessedType().getSimpleName())) {
+            return true;
+        }
+        return false;
+    }
+
+    public static boolean isOldStatementInLoop(CtElement oldStatement) {
+        if ((oldStatement.getParent() instanceof CtFor) || (oldStatement.getParent() instanceof CtForEach) ||
+                (oldStatement.getParent() instanceof CtWhile)) {
+            return true;
+        }
+        if ((oldStatement.getParent().getParent() instanceof CtFor) || (oldStatement.getParent().getParent() instanceof CtForEach)
+                || (oldStatement.getParent().getParent() instanceof CtWhile)) {
+            return true;
+        } else {
+            return false;
+        }
+    }
 }

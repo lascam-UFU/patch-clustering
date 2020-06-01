@@ -67,9 +67,9 @@ public class MissingNullCheckDetector extends AbstractPatternDetector {
                             }
                             if (wasPatternFound) {
                                 if (binaryOperator.getKind().equals(BinaryOperatorKind.EQ)) {
-                                    repairPatterns.incrementFeatureCounter("missNullCheckP");
+                                    repairPatterns.incrementFeatureCounter("missNullCheckP", operation);
                                 } else {
-                                    repairPatterns.incrementFeatureCounter("missNullCheckN");
+                                    repairPatterns.incrementFeatureCounter("missNullCheckN", operation);
                                 }
                             }
                         }

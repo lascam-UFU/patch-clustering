@@ -56,6 +56,16 @@ public class WrongReferenceDetectorTest {
     }
 
     @Test
+    public void lang42() {
+        Config config = TestUtils.setupConfig("lang_42");
+
+        RepairPatternDetector detector = new RepairPatternDetector(config);
+        RepairPatterns repairPatterns = detector.analyze();
+
+        Assert.assertTrue(repairPatterns.getFeatureCounter("wrongMethodRef") > 0);
+    }
+
+    @Test
     public void math9() {
         Config config = TestUtils.setupConfig("math_9");
 
@@ -86,6 +96,16 @@ public class WrongReferenceDetectorTest {
     }
 
     @Test
+    public void closure25() {
+        Config config = TestUtils.setupConfig("closure_25");
+
+        RepairPatternDetector detector = new RepairPatternDetector(config);
+        RepairPatterns repairPatterns = detector.analyze();
+
+        Assert.assertTrue(repairPatterns.getFeatureCounter("wrongMethodRef") > 0);
+    }
+
+    @Test
     public void chart8() {
         Config config = TestUtils.setupConfig("chart_8");
 
@@ -95,10 +115,29 @@ public class WrongReferenceDetectorTest {
         Assert.assertTrue(repairPatterns.getFeatureCounter("wrongVarRef") > 0);
     }
 
-    @Ignore
+    @Test
+    public void math15() {
+        Config config = TestUtils.setupConfig("math_15");
+
+        RepairPatternDetector detector = new RepairPatternDetector(config);
+        RepairPatterns repairPatterns = detector.analyze();
+
+        Assert.assertTrue(repairPatterns.getFeatureCounter("wrongVarRef") > 0);
+    }
+
     @Test
     public void math33() {
         Config config = TestUtils.setupConfig("math_33");
+
+        RepairPatternDetector detector = new RepairPatternDetector(config);
+        RepairPatterns repairPatterns = detector.analyze();
+
+        Assert.assertTrue(repairPatterns.getFeatureCounter("wrongVarRef") > 0);
+    }
+
+    @Test
+    public void math61() {
+        Config config = TestUtils.setupConfig("math_61");
 
         RepairPatternDetector detector = new RepairPatternDetector(config);
         RepairPatterns repairPatterns = detector.analyze();

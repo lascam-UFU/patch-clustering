@@ -38,9 +38,7 @@ public class MetricExtractor extends FeatureAnalyzer {
 
         this.computeNbModifiedClassesAndMethods(changes, jgitDiffAnalyzer);
 
-        this.computePatchSize(changes, jgitDiffAnalyzer, false);
-
-        this.computePatchSize(changes, jgitDiffAnalyzer, true);
+        this.computePatchSize(changes, jgitDiffAnalyzer);
 
         this.computeNbChunks(changes);
 
@@ -131,7 +129,7 @@ public class MetricExtractor extends FeatureAnalyzer {
     /**
      * Count the number of lines added, removed and modified in the patch
      */
-    public void computePatchSize(Changes changes, JGitBasedDiffAnalyzer jgitDiffAnalyzer, boolean codeOnly) {
+    public void computePatchSize(Changes changes, JGitBasedDiffAnalyzer jgitDiffAnalyzer) {
         int patchAddedLines = 0;
         int patchRemovedLines = 0;
         int patchModifiedLines = 0;
@@ -143,14 +141,9 @@ public class MetricExtractor extends FeatureAnalyzer {
             int addedLines = change.getLength();
             int removedLines = change.getAssociateChange().getLength();
 
-            if (codeOnly) {
-                addedLines -= this.countEmptyAndCommentLines(change, patchedFiles);
-                removedLines -= this.countEmptyAndCommentLines(change.getAssociateChange(), originalFiles);
-            }
-
             int chunkAddedLines = 0;
             int chunkRemovedLines = 0;
-            int chunkModifiedLines;
+            int chunkModifiedLines = 0;
 
             int diff = addedLines - removedLines;
             if (diff == 0) {
@@ -166,13 +159,51 @@ public class MetricExtractor extends FeatureAnalyzer {
             patchAddedLines += chunkAddedLines;
             patchRemovedLines += chunkRemovedLines;
             patchModifiedLines += chunkModifiedLines;
+
         }
 
-        String name = codeOnly ? "CodeOnly" : "AllLines";
-        this.metrics.setFeatureCounter("addedLines" + name, patchAddedLines);
-        this.metrics.setFeatureCounter("removedLines" + name, patchRemovedLines);
-        this.metrics.setFeatureCounter("modifiedLines" + name, patchModifiedLines);
-        this.metrics.setFeatureCounter("patchSize" + name, patchAddedLines + patchRemovedLines + patchModifiedLines);
+        // all lines block
+        this.metrics.setFeatureCounter("addedLinesAllLines", patchAddedLines);
+        this.metrics.setFeatureCounter("removedLinesAllLines", patchRemovedLines);
+        this.metrics.setFeatureCounter("modifiedLinesAllLines", patchModifiedLines);
+        this.metrics.setFeatureCounter("patchSizeAllLines", patchAddedLines + patchRemovedLines + patchModifiedLines);
+
+        ////////////////////////////////////////
+        // CODEONLY
+        int patchAddedLinesCodeOnly = 0;
+        int patchRemovedLinesCodeOnly = 0;
+        int patchModifiedLinesCodeOnly = 0;
+        for (Change change : changes.getNewChanges()) {
+            int addedLines = change.getLength() - this.countEmptyAndCommentLines(change, patchedFiles);
+            int removedLines = change.getAssociateChange().getLength() - this.countEmptyAndCommentLines(change.getAssociateChange(), originalFiles);
+
+            int chunkAddedLines = 0;
+            int chunkRemovedLines = 0;
+            int chunkModifiedLines = 0;
+
+            int diff = addedLines - removedLines;
+            if (diff == 0) {
+                chunkModifiedLines = addedLines;
+            } else if (diff > 0) {
+                chunkModifiedLines = removedLines;
+                chunkAddedLines = diff;
+            } else {
+                chunkModifiedLines = addedLines;
+                chunkRemovedLines = removedLines - addedLines;
+            }
+
+            patchAddedLinesCodeOnly += chunkAddedLines;
+            patchRemovedLinesCodeOnly += chunkRemovedLines;
+            patchModifiedLinesCodeOnly += chunkModifiedLines;
+
+        }
+        this.metrics.setFeatureCounter("addedLinesCodeOnly", patchAddedLinesCodeOnly);
+        this.metrics.setFeatureCounter("removedLinesCodeOnly", patchRemovedLinesCodeOnly);
+        this.metrics.setFeatureCounter("patchSizeCodeOnly", patchAddedLinesCodeOnly + patchRemovedLinesCodeOnly + patchModifiedLinesCodeOnly);
+        this.metrics.setFeatureCounter("modifiedLinesCodeOnly", patchModifiedLinesCodeOnly);
+
+
+
     }
 
     /**

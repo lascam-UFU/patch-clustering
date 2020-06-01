@@ -53,14 +53,14 @@ public class RepairActionDetector extends EditScriptBasedDetector {
                     if (srcNode instanceof CtInvocation) {
                         List<CtStatement> statements = srcNode.getElements(new LineFilter());
                         if (statements.size() == 1 && statements.get(0).equals(srcNode)) {
-                            this.repairActions.incrementFeatureCounter("mcMove");
+                            this.repairActions.incrementFeatureCounter("mcMove", srcNode);
                         }
                     } else {
                         if (srcNode.getRoleInParent() == CtRole.ARGUMENT && dstNode.getRoleInParent() == CtRole.ARGUMENT &&
                                 (srcNode.getParent() instanceof CtConstructorCall || srcNode.getParent() instanceof CtInvocation)
                                 && (dstNode.getParent() instanceof CtConstructorCall || dstNode.getParent() instanceof CtInvocation)) {
 
-                            this.repairActions.incrementFeatureCounter("mcParSwap");
+                            this.repairActions.incrementFeatureCounter("mcParSwap", srcNode);
                         }
                     }
                 }
